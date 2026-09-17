@@ -326,8 +326,8 @@
 </div>
 
 <script>
-    // رابط الـ Web App المربوط مباشرة بشيت PDZ الخاص بك
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyX2W8Jpuwk_j7xR_ked14uMZuNhbKgHGBpxPlOQPkLPpbtr1Rrn9peTT0BTbA6zKtDgg/exec";
+    // رابط الـ Web App المربوط مباشرة بشيت PDZ الجديد الخاص بك
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzFojjw1XGy34AwzHQ2_9N218dTuoe4AHzeU6kz6XcmdNvHAzAiMPmqUAuKO3ZNBGhtwg/exec";
 
     let allBookingsList = [];
 
@@ -372,18 +372,16 @@
             return;
         }
 
-        let formData = new URLSearchParams();
-        formData.append('action', 'login');
-        formData.append('email', email);
-        formData.append('password', password);
+        let payload = { action: 'login', email: email, password: password };
 
         fetch(SCRIPT_URL, {
             method: 'POST',
-            body: formData
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
         })
-        .then(res => res.json())
-        .then(res => {
-            if (res.status === 'success') {
+        .finally(() => {
+            if (email.toLowerCase() === "petersamy773@gmail.com" && password === "P3534Sam6@Lab8b1985") {
                 sessionStorage.setItem('pdz_logged_in', 'true');
                 closeLoginModal();
                 document.getElementById('adminEmail').value = '';
@@ -391,15 +389,6 @@
                 switchTab('dashboard');
             } else {
                 alert('البريد الإلكتروني أو كلمة المرور غير صحيحة!');
-            }
-        })
-        .catch(err => {
-            if (email.toLowerCase() === "petersamy773@gmail.com" && password === "P3534Sam6@Lab8b1985") {
-                sessionStorage.setItem('pdz_logged_in', 'true');
-                closeLoginModal();
-                switchTab('dashboard');
-            } else {
-                alert('خطأ في الاتصال بالسيرفر أو البيانات غير صحيحة.');
             }
         });
     }
@@ -445,21 +434,13 @@
     }
 
     function sendBookingToServer(bookingData, callback) {
-        let formData = new URLSearchParams();
-        for (let key in bookingData) {
-            formData.append(key, bookingData[key]);
-        }
-
         fetch(SCRIPT_URL, {
             method: 'POST',
-            body: formData
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(bookingData)
         })
-        .then(res => res.json())
-        .then(res => {
-            if(callback) callback();
-        })
-        .catch(err => {
-            console.error(err);
+        .finally(() => {
             if(callback) callback();
         });
     }
@@ -549,6 +530,7 @@
         const isConfirmed = paymentRef.length > 0;
 
         const newBooking = {
+            action: 'save',
             id: bookingCode,
             name: name,
             phone: phone,
@@ -662,6 +644,7 @@
         const booking = allBookingsList.find(b => String(b.id) === String(id));
         if (booking) {
             booking.status = booking.status === 'confirmed' ? 'pending' : 'confirmed';
+            booking.action = 'save';
             sendBookingToServer(booking, () => {
                 renderDashboardTable();
             });
@@ -670,14 +653,14 @@
 
     function deleteBooking(id) {
         if (confirm('هل أنت متأكد من حذف هذا الحجز نهائياً من الشيت؟')) {
-            let formData = new URLSearchParams();
-            formData.append('action', 'delete');
-            formData.append('id', id);
+            let payload = { action: 'delete', id: id };
 
             fetch(SCRIPT_URL, {
                 method: 'POST',
-                body: formData
-            }).then(() => {
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).finally(() => {
                 allBookingsList = allBookingsList.filter(b => String(b.id) !== String(id));
                 renderDashboardTable();
             });
@@ -703,7 +686,6 @@
             <body>
                 <h2>Peter Dental Zone</h2>
                 <div style="font-size: 12px; color: #00897b;">مساحتك الخاصة لابتسامة مثالية ✨</div>
-                ->
                 <div class="receipt-box">
                     <p><b>كود الحجز:</b> #${booking.id}</p>
                     <p><b>اسم المريض:</b> ${booking.name}</p>
