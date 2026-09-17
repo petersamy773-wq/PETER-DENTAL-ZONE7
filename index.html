@@ -152,6 +152,7 @@
             display: flex;
             gap: 15px;
             margin-bottom: 20px;
+            flex-wrap: wrap;
         }
         .stat-card {
             flex: 1;
@@ -160,9 +161,10 @@
             padding: 15px;
             border-radius: 8px;
             text-align: center;
+            min-width: 120px;
         }
-        .stat-card h4 { margin: 0 0 5px 0; color: var(--primary-dark); font-size: 14px; }
-        .stat-card span { font-size: 20px; font-weight: bold; color: var(--primary); }
+        .stat-card h4 { margin: 0 0 5px 0; color: var(--primary-dark); font-size: 13px; }
+        .stat-card span { font-size: 18px; font-weight: bold; color: var(--primary); }
 
         .dashboard-table {
             width: 100%;
@@ -195,13 +197,6 @@
         .status-pending { background: var(--warning); color: var(--white); }
         .status-confirmed { background: var(--accent); color: var(--white); }
         .queue-badge { background: var(--primary-dark); color: white; padding: 3px 8px; border-radius: 50%; font-weight: bold; }
-        
-        .loader {
-            text-align: center;
-            padding: 20px;
-            color: var(--primary);
-            font-weight: bold;
-        }
     </style>
 </head>
 <body>
@@ -227,7 +222,7 @@
                 <label>كلمة المرور:</label>
                 <input type="password" id="adminPassword" placeholder="********">
             </div>
-            <button class="action-btn" onclick="verifyAdminLogin()">دخول آمن (مع تنبيه بريدي)</button>
+            <button class="action-btn" onclick="verifyAdminLogin()">دخول آمن</button>
             <button onclick="closeLoginModal()" style="background:#7f8c8d; color:white; border:none; padding:8px; width:100%; border-radius:6px; margin-top:5px; cursor:pointer;">إلغاء</button>
         </div>
     </div>
@@ -266,8 +261,8 @@
         </div>
 
         <div class="form-group">
-            <label for="paymentRef">رقم إيصال التحويل (إنستاباي / فودافون كاش - اختياري):</label>
-            <input type="text" id="paymentRef" placeholder="اكتب رقم العملية لتأكيد الحجز أوتوماتيك">
+            <label for="paymentRef">رقم إيصال التحويل (إنستاباي / فودافون كاش - اختياري لتأكيد الحجز فوري):</label>
+            <input type="text" id="paymentRef" placeholder="اكتب رقم العملية إن وجد">
         </div>
 
         <button class="action-btn" onclick="autoBookAppointment()">احصل على ميعادك الذكي وتأكيد فوري</button>
@@ -278,25 +273,23 @@
     <!-- لوحة تحكم الطبيب -->
     <div id="dashboardSection" class="section-view">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-            <h3 style="color: var(--primary-dark); margin: 0;">لوحة تحكم وإدارة عيادة Peter Dental Zone</h3>
+            <h3 style="color: var(--primary-dark); margin: 0;">لوحة تحكم عيادة Peter Dental Zone</h3>
             <div>
-                <button onclick="testConnection()" style="background: #2980b9; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; margin-left: 5px;">اختبار الاتصال بالشيت 🔍</button>
-                <button onclick="fetchBookingsFromSheet()" style="background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; margin-left: 5px;">تحديث البيانات 🔄</button>
                 <button onclick="switchTab('booking')" style="background: #7f8c8d; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer;">العودة للحجز 🔙</button>
             </div>
         </div>
         
         <div class="financial-box">
             <div class="stat-card">
-                <h4>إجمالي العربونات المحصلة</h4>
+                <h4>إجمالي العربونات</h4>
                 <span id="totalDepositBox">0 جنيه</span>
             </div>
             <div class="stat-card">
-                <h4>إجمالي الإيرادات المتوقعة</h4>
+                <h4>الإيرادات المتوقعة</h4>
                 <span id="totalRevenueBox">0 جنيه</span>
             </div>
             <div class="stat-card">
-                <h4>إجمالي الحجوزات المسجلة</h4>
+                <h4>إجمالي الحجوزات</h4>
                 <span id="totalCountBox">0</span>
             </div>
         </div>
@@ -317,7 +310,7 @@
                     </tr>
                 </thead>
                 <tbody id="appointmentsTableBody">
-                    <tr><td colspan="9" class="loader">جاري تحميل البيانات من الشيت...</td></tr>
+                    <tr><td colspan="9" style="padding: 20px; color: #777;">لا توجد حجوزات مسجلة حالياً.</td></tr>
                 </tbody>
             </table>
         </div>
@@ -326,8 +319,8 @@
 </div>
 
 <script>
-    // رابط الـ Web App المربوط مباشرة بشيت PDZ الجديد الخاص بك
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzFojjw1XGy34AwzHQ2_9N218dTuoe4AHzeU6kz6XcmdNvHAzAiMPmqUAuKO3ZNBGhtwg/exec";
+    const ADMIN_EMAIL = "petersamy773@gmail.com";
+    const ADMIN_PASS = "P3534Sam6@Lab8b1985";
 
     let allBookingsList = [];
 
@@ -336,7 +329,7 @@
         document.getElementById("bookingDate").setAttribute('min', today);
         document.getElementById("bookingDate").value = today;
 
-        fetchBookingsFromSheet();
+        loadBookingsFromStorage();
 
         let clickCount = 0;
         let clickTimer = null;
@@ -367,30 +360,15 @@
         const email = document.getElementById('adminEmail').value.trim();
         const password = document.getElementById('adminPassword').value.trim();
 
-        if(!email || !password) {
-            alert('برجاء كتابة البريد وكلمة المرور!');
-            return;
+        if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase() && password === ADMIN_PASS) {
+            sessionStorage.setItem('pdz_logged_in', 'true');
+            closeLoginModal();
+            document.getElementById('adminEmail').value = '';
+            document.getElementById('adminPassword').value = '';
+            switchTab('dashboard');
+        } else {
+            alert('البريد الإلكتروني أو كلمة المرور غير صحيحة!');
         }
-
-        let payload = { action: 'login', email: email, password: password };
-
-        fetch(SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        })
-        .finally(() => {
-            if (email.toLowerCase() === "petersamy773@gmail.com" && password === "P3534Sam6@Lab8b1985") {
-                sessionStorage.setItem('pdz_logged_in', 'true');
-                closeLoginModal();
-                document.getElementById('adminEmail').value = '';
-                document.getElementById('adminPassword').value = '';
-                switchTab('dashboard');
-            } else {
-                alert('البريد الإلكتروني أو كلمة المرور غير صحيحة!');
-            }
-        });
     }
 
     function switchTab(tabName) {
@@ -399,50 +377,26 @@
             document.getElementById('bookingSection').classList.add('active');
         } else {
             document.getElementById('dashboardSection').classList.add('active');
-            fetchBookingsFromSheet();
+            loadBookingsFromStorage();
+            renderDashboardTable();
         }
     }
 
-    function testConnection() {
-        alert('جاري اختبار الاتصال بالشيت...');
-        fetch(SCRIPT_URL)
-            .then(res => res.json())
-            .then(data => {
-                alert('الاتصال ناجح 100%! تم جلب عدد ' + (Array.isArray(data) ? data.length : 0) + ' حجوزات من شيت PDZ.');
-                console.log(data);
-            })
-            .catch(err => {
-                alert('فشل الاتصال! تأكد من منح الصلاحيات عبر فتح رابط الـ exec في المتصفح مرة واحدة.');
-                console.error(err);
-            });
+    function loadBookingsFromStorage() {
+        const stored = localStorage.getItem('pdz_bookings');
+        if (stored) {
+            try {
+                allBookingsList = JSON.parse(stored);
+            } catch (e) {
+                allBookingsList = [];
+            }
+        } else {
+            allBookingsList = [];
+        }
     }
 
-    function fetchBookingsFromSheet() {
-        const tbody = document.getElementById('appointmentsTableBody');
-        tbody.innerHTML = `<tr><td colspan="9" class="loader">جاري جلب أحدث الحجوزات من الشيت...</td></tr>`;
-
-        fetch(SCRIPT_URL)
-            .then(res => res.json())
-            .then(data => {
-                allBookingsList = Array.isArray(data) ? data : [];
-                renderDashboardTable();
-            })
-            .catch(err => {
-                console.error(err);
-                tbody.innerHTML = `<tr><td colspan="9" style="color: red; padding: 15px;">تعذر جلب البيانات من الشيت. تأكد من الاتصال بالإنترنت.</td></tr>`;
-            });
-    }
-
-    function sendBookingToServer(bookingData, callback) {
-        fetch(SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(bookingData)
-        })
-        .finally(() => {
-            if(callback) callback();
-        });
+    function saveBookingsToStorage() {
+        localStorage.setItem('pdz_bookings', JSON.stringify(allBookingsList));
     }
 
     function autoBookAppointment() {
@@ -467,6 +421,8 @@
         const duration = parseInt(select.options[select.selectedIndex].getAttribute('data-duration'));
         const price = parseInt(select.options[select.selectedIndex].getAttribute('data-price'));
         const deposit = price * 0.20; 
+
+        loadBookingsFromStorage();
 
         const dayBookings = allBookingsList
             .filter(b => b.date === date)
@@ -529,8 +485,10 @@
         const bookingCode = 'PDZ-' + Math.floor(1000 + Math.random() * 9000);
         const isConfirmed = paymentRef.length > 0;
 
+        // حساب رقم دور المريض في نفس اليوم
+        const patientQueueNumber = dayBookings.length + 1;
+
         const newBooking = {
-            action: 'save',
             id: bookingCode,
             name: name,
             phone: phone,
@@ -538,21 +496,22 @@
             price: price,
             date: date,
             startMin: assignedStart,
+            endMin: assignedEnd,
             time: assignedTimeStr,
             deposit: deposit,
             paymentRef: paymentRef ? paymentRef : 'لم يُسجل بعد',
-            status: isConfirmed ? 'confirmed' : 'pending'
+            status: isConfirmed ? 'confirmed' : 'pending',
+            queueNum: patientQueueNumber
         };
 
-        sendBookingToServer(newBooking, () => {
-            allBookingsList.push(newBooking);
-            renderDashboardTable();
-        });
+        allBookingsList.push(newBooking);
+        saveBookingsToStorage();
 
         const summaryDiv = document.getElementById('summary');
         summaryDiv.style.display = 'block';
         summaryDiv.innerHTML = `
-            <h3 style="color: var(--primary-dark); margin-top:0;">مرحباً بك في Peter Dental Zone</h3>
+            <h3 style="color: var(--primary-dark); margin-top:0;">تم الحجز بنجاح في Peter Dental Zone ✨</h3>
+            <p><b>رقم دورك في الطابور:</b> <span style="color: var(--danger); font-size: 20px; font-weight: bold;">رقم ${patientQueueNumber}</span></p>
             <p><b>كود الحجز:</b> <span style="color: var(--primary); font-size: 18px; font-weight: bold;">#${bookingCode}</span></p>
             <p><b>المريض:</b> ${name} (${phone})</p>
             <p><b>الخدمة:</b> ${service} (${price} جنيه)</p>
@@ -560,7 +519,10 @@
             <p><b>ميعاد الجلسة:</b> <span style="color: var(--danger); font-weight: bold; font-size: 17px;">${assignedTimeStr}</span></p>
             <hr>
             <p><b>العربون المطلوب (20%):</b> <span style="color: #d35400; font-weight: bold; font-size: 18px;">${deposit} جنيه</span></p>
-            <button class="action-btn" style="background:#3498db; margin-top:5px;" onclick="printReceipt('${bookingCode}')">طباعة إيصال الحجز 🖨️</button>
+            <div style="background: #fff3cd; border: 1px solid #ffeeba; padding: 10px; border-radius: 5px; margin-top: 10px; color: #856404; font-size: 14px;">
+                ⚠️ <b>تنبيه هام جداً:</b> برجاء أخذ <b>سكرين شوت (لقطة شاشة)</b> لهذا الإيصال، والحضور إلى العيادة قبل الميعاد بـ <b>10 دقائق</b> كاملة مع إظهار السكرين شوت عند الاستقبال.
+            </div>
+            <button class="action-btn" style="background:#3498db; margin-top:10px;" onclick="printReceipt('${bookingCode}')">طباعة إيصال الحجز 🖨️</button>
         `;
 
         document.getElementById('patientName').value = '';
@@ -570,12 +532,13 @@
 
     function renderDashboardTable() {
         const tbody = document.getElementById('appointmentsTableBody');
-        
+        loadBookingsFromStorage();
+
         let totalDeposit = 0;
         let totalRevenue = 0;
 
         if (allBookingsList.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="9" style="color: #777; padding: 15px;">لا توجد حجوزات مسجلة في الشيت حالياً.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="9" style="color: #777; padding: 15px;">لا توجد حجوزات مسجلة حالياً.</td></tr>`;
             document.getElementById('totalDepositBox').innerText = '0 جنيه';
             document.getElementById('totalRevenueBox').innerText = '0 جنيه';
             document.getElementById('totalCountBox').innerText = '0';
@@ -609,7 +572,7 @@
             const confirmBtnText = b.status === 'confirmed' ? 'إلغاء التأكيد' : 'تأكيد';
 
             let cleanPhone = String(b.phone).startsWith('0') ? '2' + b.phone : b.phone;
-            let waMsg = encodeURIComponent(`مرحباً يا ${b.name}، تم تأكيد حجزك في عيادة Peter Dental Zone برقم كود (#${b.id}) في تاريخ ${b.date} الساعة ${b.time}. ننتظر زيارتك! ✨`);
+            let waMsg = encodeURIComponent(`مرحباً يا ${b.name}، تم تأكيد حجزك برقم دور (${queueCounter}) في عيادة Peter Dental Zone برقم كود (#${b.id}) في تاريخ ${b.date} الساعة ${b.time}. برجاء الحضور قبل الميعاد بـ 10 دقائق وأخذ سكرين شوت للإيصال. ننتظر زيارتك! ✨`);
             let waLink = `https://wa.me/${cleanPhone}?text=${waMsg}`;
 
             html += `
@@ -641,52 +604,48 @@
     }
 
     function toggleConfirm(id) {
+        loadBookingsFromStorage();
         const booking = allBookingsList.find(b => String(b.id) === String(id));
         if (booking) {
             booking.status = booking.status === 'confirmed' ? 'pending' : 'confirmed';
-            booking.action = 'save';
-            sendBookingToServer(booking, () => {
-                renderDashboardTable();
-            });
+            saveBookingsToStorage();
+            renderDashboardTable();
         }
     }
 
     function deleteBooking(id) {
-        if (confirm('هل أنت متأكد من حذف هذا الحجز نهائياً من الشيت؟')) {
-            let payload = { action: 'delete', id: id };
-
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            }).finally(() => {
-                allBookingsList = allBookingsList.filter(b => String(b.id) !== String(id));
-                renderDashboardTable();
-            });
+        if (confirm('هل أنت متأكد من حذف هذا الحجز نهائياً؟')) {
+            loadBookingsFromStorage();
+            allBookingsList = allBookingsList.filter(b => String(b.id) !== String(id));
+            saveBookingsToStorage();
+            renderDashboardTable();
         }
     }
 
     function printReceipt(id) {
+        loadBookingsFromStorage();
         const booking = allBookingsList.find(b => String(b.id) === String(id));
         if (!booking) return;
 
-        let printWindow = window.open('', '_blank', 'width=400,height=600');
+        let printWindow = window.open('', '_blank', 'width=400,height=650');
         printWindow.document.write(`
             <html dir="rtl">
             <head>
                 <title>إيصال حجز - Peter Dental Zone</title>
                 <style>
                     body { font-family: Tahoma, sans-serif; padding: 20px; text-align: center; }
-                    h2 { color: #004d40; margin-bottom: 5px; }
-                    .receipt-box { border: 2px dashed #00897b; padding: 15px; border-radius: 8px; text-align: right; margin-top: 15px; }
-                    .footer { margin-top: 20px; font-size: 12px; color: #555; }
+                    h2 { color: #004d40; margin-bottom: 2px; }
+                    .receipt-box { border: 2px dashed #00897b; padding: 15px; border-radius: 8px; text-align: right; margin-top: 10px; }
+                    .warning-box { background: #fff3cd; border: 1px solid #ffeeba; padding: 10px; border-radius: 5px; margin-top: 10px; color: #856404; font-size: 13px; text-align: right; font-weight: bold; line-height: 1.5; }
+                    .footer { margin-top: 15px; font-size: 12px; color: #555; }
                 </style>
             </head>
             <body>
                 <h2>Peter Dental Zone</h2>
-                <div style="font-size: 12px; color: #00897b;">مساحتك الخاصة لابتسامة مثالية ✨</div>
+                <div style="font-size: 12px; color: #00897b; font-weight: bold;">مساحتك الخاصة لابتسامة مثالية ✨</div>
                 <div class="receipt-box">
+                    <p style="text-align: center; font-size: 18px; color: #c0392b; margin: 5px 0;"><b>رقم دورك: رقم ${booking.queueNum || 1}</b></p>
+                    <hr style="border: 0; border-top: 1px solid #ddd;">
                     <p><b>كود الحجز:</b> #${booking.id}</p>
                     <p><b>اسم المريض:</b> ${booking.name}</p>
                     <p><b>رقم الموبايل:</b> ${booking.phone}</p>
@@ -697,7 +656,10 @@
                     <p><b>العربون المطلوب:</b> ${booking.deposit} جنيه</p>
                     <p><b>حالة التأكيد:</b> ${booking.status === 'confirmed' ? 'مؤكد ✅' : 'قيد الانتظار ⏳'}</p>
                 </div>
-                <div class="footer">شكراً لاختيارك عيادتنا. برجاء الحضور قبل الميعاد بـ 10 دقائق.</div>
+                <div class="warning-box">
+                    ⚠️ تنبيه هـام: برجاء أخذ <b>سكرين شوت (لقطة شاشة)</b> لهذا الإيصال، والحضور قبل الميعاد بـ <b>10 دقائق</b> وإظهار السكرين شوت عند الاستقبال.
+                </div>
+                <div class="footer">شكراً لاختيارك عيادتنا. نتمنى لك دوام الصحة.</div>
                 <script>window.print();<\/script>
             </body>
             </html>
